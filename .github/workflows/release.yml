@@ -4,11 +4,11 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to build and publish, e.g. 0.8.1 (must match the tag it should create)'
+        description: "Version to build and publish, e.g. 0.8.1 (must match the tag it should create)"
         required: true
 
 permissions:
@@ -23,7 +23,31 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  # Both platform jobs upload into one draft release. Letting electron-builder create it on both
+  # sides races: each job can create its own release for the same tag and split the assets.
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Ensure a draft release exists
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ver="${{ github.event.inputs.version }}"
+          [ -n "$ver" ] || ver="${GITHUB_REF_NAME#v}"
+          tag="v$ver"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release $tag already exists"
+          else
+            gh release create "$tag" --draft --title "Pi Studio $tag" --notes "Release notes land here when the builds finish."
+          fi
+
   build-win:
+    needs: create-release
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -31,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
           cache: npm
 
       - name: Cache Electron and builder tooling
@@ -62,6 +86,7 @@ jobs:
         run: npx electron-builder --win --publish always
 
   build-mac:
+    needs: create-release
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
@@ -69,7 +94,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "22"
           cache: npm
 
       - name: Cache Electron and builder tooling
@@ -134,37 +159,58 @@ jobs:
       - name: Package and publish (unsigned)
         if: steps.signing.outputs.enabled != 'true'
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npx electron-builder --mac --publish always
 
       - name: Remove App Store Connect key
         if: always() && steps.signing.outputs.enabled == 'true'
         run: rm -f "$APPLE_API_KEY"
 
-  release-notes:
-    needs: [build-win, build-mac]
+  publish:
+    needs: [create-release, build-win, build-mac]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Build notes from CHANGELOG
         id: notes
+        env:
+          TAG: ${{ needs.create-release.outputs.tag }}
         run: |
           set -euo pipefail
-          ver="${{ github.event.inputs.version }}"
-          [ -n "$ver" ] || ver="${GITHUB_REF_NAME#v}"
+          ver="${TAG#v}"
           if node scripts/generate-release-notes.mjs "$ver" > body.md; then
             echo "generated=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::No CHANGELOG section for $ver; leaving the release body as electron-builder wrote it"
+            echo "::warning::No CHANGELOG section for $ver; keeping the release body written by CI"
             echo "generated=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Apply notes to the release
-        if: steps.notes.outputs.generated == 'true'
+      # Every asset must be there before the release goes public, otherwise an installed app sees an
+      # update whose installer is missing and gives up until the next 4 h check.
+      - name: Verify the feed and the installers
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.create-release.outputs.tag }}
         run: |
-          tag="v${{ github.event.inputs.version }}"
-          [ "$tag" = "v" ] && tag="$GITHUB_REF_NAME"
-          gh release edit "$tag" --notes-file body.md
+          set -euo pipefail
+          names="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
+          echo "$names"
+          for required in latest.yml latest-mac.yml; do
+            grep -qx "$required" <<<"$names" || { echo "::error::release is missing $required"; exit 1; }
+          done
+          grep -q '\.exe$' <<<"$names" || { echo "::error::release has no Windows installer"; exit 1; }
+          grep -q '\.dmg$' <<<"$names" || { echo "::error::release has no macOS disk image"; exit 1; }
+
+      - name: Publish the draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.create-release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.notes.outputs.generated }}" = "true" ]; then
+            gh release edit "$TAG" --notes-file body.md --draft=false
+          else
+            gh release edit "$TAG" --draft=false
+          fi
+          gh release view "$TAG" --json tagName,isDraft,assets --jq '{tag:.tagName,draft:.isDraft,assets:(.assets|length)}'
