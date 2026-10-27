@@ -32,7 +32,7 @@ describe('generate-release-notes', () => {
 `
 
     const notes = buildReleaseNotesFromChangelog(changelog, '0.4.99')
-    assert.match(notes, /pi Desktop v0\.4\.99/)
+    assert.match(notes, /Pi Studio v0\.4\.99/)
     assert.match(notes, /软件内更新提醒/)
     assert.match(notes, /yaml 运行时/)
     assert.doesNotMatch(notes, /GitHub Release 正文链接/)
@@ -46,10 +46,13 @@ describe('generate-release-notes', () => {
     )
   })
 
-  it('release workflow injects body_path instead of changelog link placeholder', () => {
+  it('release workflow applies generated notes instead of a changelog link placeholder', () => {
     const yml = readFileSync(join(root, '.github/workflows/release.yml'), 'utf8')
     assert.match(yml, /generate-release-notes\.mjs/)
-    assert.match(yml, /body_path:\s*release-body\.md/)
+    assert.match(yml, /generate-release-notes\.mjs/)
+    // Fork pipeline publishes from electron-builder, so the notes are applied afterwards
+    // through the API instead of being uploaded as a release asset.
+    assert.match(yml, /gh release edit .*--notes-file/)
     assert.doesNotMatch(
       yml,
       /完整更新日志：\*\*\[CHANGELOG\.md\]/,
