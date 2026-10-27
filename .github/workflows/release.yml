@@ -95,7 +95,10 @@ jobs:
     env:
       GH_REPO: ${{ github.repository }}
     steps:
+      # Full history so the previous release tag can be found for the compare link.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Build notes from CHANGELOG
         id: notes
@@ -104,11 +107,16 @@ jobs:
         run: |
           set -euo pipefail
           ver="${TAG#v}"
-          if node scripts/generate-release-notes.mjs "$ver" > body.md; then
-            echo "generated=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::No CHANGELOG section for $ver; keeping the release body written by CI"
-            echo "generated=false" >> "$GITHUB_OUTPUT"
+          if ! node scripts/generate-release-notes.mjs "$ver" > body.md; then
+            echo "::warning::No CHANGELOG section for $ver; writing a bare title"
+            printf '## Pi Studio v%s\n' "$ver" > body.md
+          fi
+          prev="$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)"
+          if [ -n "$prev" ]; then
+            {
+              echo
+              echo "**Full Changelog**: [$prev...$TAG](https://github.com/$GITHUB_REPOSITORY/compare/$prev...$TAG)"
+            } >> body.md
           fi
 
       # Every asset must be there before the release goes public, otherwise an installed app sees an
@@ -132,9 +140,5 @@ jobs:
           TAG: ${{ needs.create-release.outputs.tag }}
         run: |
           set -euo pipefail
-          if [ "${{ steps.notes.outputs.generated }}" = "true" ]; then
-            gh release edit "$TAG" --notes-file body.md --draft=false
-          else
-            gh release edit "$TAG" --draft=false
-          fi
+          gh release edit "$TAG" --notes-file body.md --draft=false
           gh release view "$TAG" --json tagName,isDraft,assets --jq '{tag:.tagName,draft:.isDraft,assets:(.assets|length)}'
