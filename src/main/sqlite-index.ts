@@ -96,6 +96,14 @@ function initSchema(d: SqliteDb): void {
     );
     CREATE INDEX IF NOT EXISTS idx_file_change_session ON file_change_index(session_id);
     CREATE INDEX IF NOT EXISTS idx_file_change_turn ON file_change_index(turn_id);
+    CREATE TABLE IF NOT EXISTS attachment_index (
+      source_path TEXT PRIMARY KEY,
+      path TEXT NOT NULL,
+      session_file TEXT,
+      created_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_attachment_path ON attachment_index(path);
+    CREATE INDEX IF NOT EXISTS idx_attachment_session ON attachment_index(session_file);
     CREATE TABLE IF NOT EXISTS extension_discovery (
       extension_id TEXT PRIMARY KEY,
       source TEXT,
@@ -146,6 +154,70 @@ export const sqliteIndex = {
     return d.prepare(
       'SELECT * FROM file_change_index WHERE turn_id = ? ORDER BY timestamp DESC',
     ).all(turnId)
+  },
+
+  /** Clipboard path -> persisted blob path. One row per paste; the blob itself is shared by hash. */
+  upsertAttachment(sourcePath: string, path: string, sessionFile?: string): void {
+    const d = getDb()
+    if (!d) return
+    d.prepare(
+      'INSERT OR REPLACE INTO attachment_index (source_path, path, session_file, created_at) VALUES (?, ?, ?, ?)',
+    ).run(sourcePath, path, sessionFile ?? null, Date.now())
+  },
+
+  /** Same file seen with forward/back slashes or different case (Windows). */
+  findAttachmentLike(sourcePath: string): { path: string } | null {
+    const d = getDb()
+    if (!d) return null
+    const row = d
+      .prepare(
+        "SELECT path FROM attachment_index WHERE lower(replace(source_path, char(92), '/')) = lower(replace(?, char(92), '/'))",
+      )
+      .all(sourcePath)[0]
+    return row ? (row as { path: string }) : null
+  },
+
+  findAttachment(sourcePath: string): { path: string } | null {
+    const d = getDb()
+    if (!d) return null
+    const row = d.prepare('SELECT path FROM attachment_index WHERE source_path = ?').all(sourcePath)[0]
+    return row ? (row as { path: string }) : null
+  },
+
+  /** Every blob any row points at; anything else in the attachment dir is unreferenced. */
+  attachmentBlobPaths(): string[] {
+    const d = getDb()
+    if (!d) return []
+    return d.prepare('SELECT DISTINCT path FROM attachment_index').all().map((r) => (r as { path: string }).path)
+  },
+
+  /** Source paths this session sent, oldest first — the renderer rebuilds image segments from them. */
+  attachmentsForSession(sessionFile: string): string[] {
+    const d = getDb()
+    if (!d) return []
+    return d
+      // NULL rows come from the first message of a session: the file does not exist yet at send time.
+      .prepare(
+        'SELECT source_path FROM attachment_index WHERE session_file = ? OR session_file IS NULL ORDER BY created_at',
+      )
+      .all(sessionFile)
+      .map((r) => (r as { source_path: string }).source_path)
+  },
+
+  /** Newest first, for rows written before a session file existed. */
+  recentAttachments(limit = 500): string[] {
+    const d = getDb()
+    if (!d) return []
+    return d
+      .prepare('SELECT source_path FROM attachment_index ORDER BY created_at DESC LIMIT ?')
+      .all(limit)
+      .map((r) => (r as { source_path: string }).source_path)
+  },
+
+  deleteAttachmentsForSession(sessionFile: string): void {
+    const d = getDb()
+    if (!d) return
+    d.prepare('DELETE FROM attachment_index WHERE session_file = ?').run(sessionFile)
   },
 
 }
