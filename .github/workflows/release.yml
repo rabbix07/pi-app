@@ -27,6 +27,8 @@ jobs:
   # sides races: each job can create its own release for the same tag and split the assets.
   create-release:
     runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
@@ -169,6 +171,8 @@ jobs:
   publish:
     needs: [create-release, build-win, build-mac]
     runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
 
