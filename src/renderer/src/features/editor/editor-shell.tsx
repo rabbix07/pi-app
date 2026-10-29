@@ -97,7 +97,9 @@ export function EditorShell({ sessionTitle, children }: { sessionTitle: string; 
       </div>
       <div className={cn('min-h-0 flex-1', activeDoc && 'hidden')}>{children}</div>
       {activeDoc ? (
-        <div className="min-h-0 flex-1 overflow-hidden">
+        // flex column so the preview's `flex-1` fills the pane instead of growing to content
+        // height, which left the code pane taller than the window and killed vertical scroll.
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <EditorBody doc={activeDoc} />
         </div>
       ) : null}

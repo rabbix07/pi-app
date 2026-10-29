@@ -108,4 +108,42 @@ test.describe('files panel and main-column editor', () => {
       fs.rmSync(home, { recursive: true, force: true })
     }
   })
+  test('scrolls a long file vertically and wraps long lines', async () => {
+    test.setTimeout(200_000)
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'pi-e2e-scroll-'))
+    const project = path.join(home, 'code', 'demo')
+    fs.mkdirSync(project, { recursive: true })
+    const body = Array.from({ length: 400 }, (_v, i) => 'echo "line ' + (i + 1) + ' ' + 'x'.repeat(40) + '"')
+    fs.writeFileSync(path.join(project, 'long.sh'), body.join(String.fromCharCode(10)))
+    fs.writeFileSync(path.join(project, 'wide.sh'), '# ' + 'x'.repeat(600))
+    const model = startScriptedModel((_first, _tools, last) => ({ text: 'reply to ' + last.slice(0, 14) }), [])
+    const agent = await launchAgentApp(await listen(model), { home, keepHome: true })
+    const { win } = agent
+    try {
+      await agent.newSession()
+      await win.locator('[data-right-panel-toggle]').click()
+      await win.locator('[data-panel-tab="files"]').click()
+
+      // A long line wraps instead of turning the pane into a horizontal scroller.
+      await win.getByText('wide.sh').click()
+      const pane = win.locator('.files-preview-scroll-host .overlay-scroll-pane')
+      await expect(pane).toBeVisible({ timeout: 15_000 })
+      // The wrapped line is taller than a single line row.
+      await expect.poll(() => win.evaluate(() =>
+        (document.querySelector('.native-code-shiki > div') as HTMLElement | null)?.getBoundingClientRect().height ?? 0,
+      )).toBeGreaterThan(30)
+      expect(await pane.evaluate((el) => el.scrollWidth)).toBe(await pane.evaluate((el) => el.clientWidth))
+
+      // The pane is bounded by the window, so the wheel scrolls the file.
+      await win.getByText('long.sh').click()
+      await expect.poll(() => pane.evaluate((el) => el.scrollHeight > el.clientHeight + 200)).toBe(true)
+      const box = (await pane.boundingBox())!
+      await win.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+      await win.mouse.wheel(0, 600)
+      await expect.poll(() => pane.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+    } finally {
+      await agent.close()
+      fs.rmSync(home, { recursive: true, force: true })
+    }
+  })
 })
