@@ -75,7 +75,19 @@
     "cloneCancelled": "Clone cancelled",
     "cloneFailed": "Clone failed",
     "cloned": "Cloned into a new session",
-    "nothingToClone": "Nothing to clone yet"
+    "nothingToClone": "Nothing to clone yet",
+    "forkSelectorFailed": "Could not open the fork selector",
+    "settingsInSidebar": "Open settings from the sidebar",
+    "queueRestored": "Pulled {{count}} queued messages back into the composer",
+    "queueNothingToRestore": "No queued messages to pull back",
+    "queueRestoreFailed": "Could not pull the queue back",
+    "rewindNoSessionFile": "No session file found, cannot refresh the timeline",
+    "rewindNoEntryId": "Cannot rewind: missing message entry id",
+    "rewindCancelled": "Jump cancelled",
+    "rewindRefreshFailed": "Could not refresh history after the rewind",
+    "rewindPrefilled": "Rewound: the message is in the composer, edit and send again",
+    "rewindJumped": "Jumped to that node, you can continue from here",
+    "rewindFailed": "Rewind failed"
   },
   "voice": {
     "start": "Start recording",

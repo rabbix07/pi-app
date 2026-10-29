@@ -194,9 +194,7 @@ const TimelineItemBase = memo(function TimelineItem({
               }
             >
               <div className="timeline-status-line timeline-status-line--warn text-[12px]">
-                {t('timeline:interruptedEmpty', {
-                  defaultValue: '回复未完成（程序关闭或中断）。可点回退到上一条后继续。',
-                })}
+                {t('timeline:interruptedEmpty')}
               </div>
             </MessageHoverShell>
           </div>
@@ -245,7 +243,7 @@ const TimelineItemBase = memo(function TimelineItem({
           </div>
         ) : isInterrupted && !hasText ? (
           <div className="text-[12px] timeline-text-quiet">
-            {t('timeline:interruptedPartial', { defaultValue: '回复未完成（已中断）' })}
+            {t('timeline:interruptedPartial')}
           </div>
         ) : null}
       </>
@@ -285,7 +283,7 @@ const TimelineItemBase = memo(function TimelineItem({
           : 'timeline-text-quiet'
     const Icon = status === 'error' ? XCircle : status === 'ok' ? CheckCircle2 : CornerDownLeft
     const label =
-      status === 'error' ? t('timeline:statusFailed') : status === 'ok' ? t('timeline:statusDone') : String(item.text ?? '').includes('失败') ? t('timeline:statusFailed') : t('timeline:statusExecuted')
+      status === 'error' ? t('timeline:statusFailed') : status === 'ok' ? t('timeline:statusDone') : String(item.text ?? '').includes('失败') ? t('timeline:statusFailed') : t('timeline:statusExecuted')  // i18n-exempt: matches text, not UI copy
     return (
       <div className="py-1">
         <div className="timeline-status-line">

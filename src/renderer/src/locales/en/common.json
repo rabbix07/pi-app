@@ -381,5 +381,28 @@
       "turns_other": "{{count}} turns"
     },
     "focusHint": "Too narrow for all panes; shown as tabs. Change the layout here"
-  }
+  },
+  "tasksPanel": {
+    "inProgress": "In progress",
+    "planning": "Planning",
+    "review": "In review",
+    "completed": "Done",
+    "noAdapter": "No adapterId bound ({{panelId}})",
+    "openProjectFirst": "Open a project first",
+    "loadFailed": "Could not load panel state",
+    "retry": "Retry",
+    "noWorkspaceLayout": "This project has no task workspace layout",
+    "needsTrellis": "Requires `.trellis/` in the project root (stateProvider: workspace-trellis)",
+    "activeTasks": "Active tasks ({{count}})",
+    "currentTask": "Current task",
+    "subtaskCount": "{{count}} subtasks",
+    "subtasks": "Subtasks",
+    "acceptance": "Acceptance criteria",
+    "noActiveTasks": "No active tasks",
+    "recentLogs": "Recent logs",
+    "lineCount": "{{count}} lines"
+  },
+  "newSessionTitle": "New session",
+  "refreshFailed": "Refresh failed",
+  "resizeDrag": "Drag to resize"
 }

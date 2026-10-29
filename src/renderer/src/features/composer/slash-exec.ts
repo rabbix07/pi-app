@@ -177,7 +177,7 @@ export async function executeSlashCommand(
         void storeMod
       } catch (e) {
         console.error('/fork failed:', e)
-        toast.error('无法打开 Fork 选择器')
+        toast.error(i18n.t('composer:toast.forkSelectorFailed'))
       }
       return true
     }
@@ -187,14 +187,25 @@ export async function executeSlashCommand(
         await cloneCurrentSession()
       } catch (e) {
         console.error('/clone failed:', e)
-        toast.error('Clone 失败')
+        toast.error(i18n.t('composer:toast.cloneFailed'))
       }
       return true
     }
-    case 'review': { setActivePanel('review'); toast.info('已切换到 Review 面板'); return true }
-    case 'run': { setActivePanel('run'); toast.info('已切换到 Run 面板'); return true }
+    case 'review': {
+      setActivePanel('review')
+      toast.info(i18n.t('composer:toast.openedPanel', { panel: 'Review' }))
+      return true
+    }
+    case 'run': {
+      setActivePanel('run')
+      toast.info(i18n.t('composer:toast.openedPanel', { panel: 'Run' }))
+      return true
+    }
     case 'tree': { setActivePanel('tree'); return true }
-    case 'settings': { toast.info('请从左侧栏打开设置'); return true }
+    case 'settings': {
+      toast.info(i18n.t('composer:toast.settingsInSidebar'))
+      return true
+    }
     case 'skills':
     case 'prompts':
     case 'help': {

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MessageSquarePlus } from '@renderer/components/icons'
 import {
   deleteReviewComment,
@@ -17,6 +18,7 @@ export function ReviewHunkComments({
   hunkIndex: number
 }) {
   const [open, setOpen] = useState(false)
+  const { t } = useTranslation()
   const [draft, setDraft] = useState('')
   const [tick, setTick] = useState(0)
 
@@ -38,7 +40,7 @@ export function ReviewHunkComments({
       <button
         type="button"
         className="chrome-icon-btn flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] text-muted-foreground/70 hover:text-foreground"
-        title="行内评论草稿"
+        title={t('review:hunkComment.draftTitle')}
         onClick={() => setOpen((o) => !o)}
       >
         <MessageSquarePlus className="h-3 w-3" />
@@ -57,14 +59,14 @@ export function ReviewHunkComments({
                   bump()
                 }}
               >
-                删除
+                {t('review:hunkComment.delete')}
               </button>
             </div>
           ))}
           <textarea
             className="w-full resize-none rounded border border-border/50 bg-background px-2 py-1 font-sans text-[10px]"
             rows={2}
-            placeholder="评论草稿…"
+            placeholder={t('review:hunkComment.placeholder')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
           />
@@ -73,7 +75,7 @@ export function ReviewHunkComments({
             className="mt-1 w-full rounded bg-primary/10 py-1 text-[10px] text-primary hover:bg-primary/15"
             onClick={save}
           >
-            保存
+            {t('review:hunkComment.save')}
           </button>
         </div>
       )}

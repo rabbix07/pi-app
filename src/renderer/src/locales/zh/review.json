@@ -49,5 +49,11 @@
     "turn": "本轮",
     "session": "本对话",
     "git": "Git"
+  },
+  "hunkComment": {
+    "draftTitle": "行内评论草稿",
+    "delete": "删除",
+    "placeholder": "评论草稿…",
+    "save": "保存"
   }
 }

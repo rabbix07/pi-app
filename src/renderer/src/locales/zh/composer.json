@@ -75,7 +75,19 @@
     "cloneCancelled": "已取消 Clone",
     "cloneFailed": "Clone 失败",
     "cloned": "已 Clone 到新会话",
-    "nothingToClone": "当前没有可 Clone 的内容"
+    "nothingToClone": "当前没有可 Clone 的内容",
+    "forkSelectorFailed": "无法打开 Fork 选择器",
+    "settingsInSidebar": "请从左侧栏打开设置",
+    "queueRestored": "已拉回 {{count}} 条排队消息到输入框",
+    "queueNothingToRestore": "没有可拉回的排队消息",
+    "queueRestoreFailed": "拉回队列失败",
+    "rewindNoSessionFile": "未找到会话文件，无法刷新时间线",
+    "rewindNoEntryId": "无法回退：缺少消息节点 id",
+    "rewindCancelled": "跳转已取消",
+    "rewindRefreshFailed": "回退后刷新历史失败",
+    "rewindPrefilled": "已回退：消息已填入输入框，可修改后重新发送",
+    "rewindJumped": "已跳转到该节点，可从此继续",
+    "rewindFailed": "回退失败"
   },
   "voice": {
     "start": "开始录音",
