@@ -110,7 +110,7 @@ export function registerSettingsHandlers(): void {
   })
 
   registerHandler('ipc:app.openRelease', async (req) => {
-    const slug = (process.env.PI_DESKTOP_GITHUB_REPO || 'rabbix07/pi-app').trim()
+    const slug = (process.env.PI_DESKTOP_GITHUB_REPO || 'rabbix404/pi-app').trim()
     const url = (req.url && String(req.url).trim()) || `https://github.com/${slug}/releases`
     await shell.openExternal(url)
     return { ok: true }

@@ -35,7 +35,7 @@ describe('release workflow contract', () => {
   })
 
   it('keeps publishing pointed at this fork', () => {
-    assert.match(builder, /publish:\n\s+provider: github\n\s+owner: rabbix07\n\s+repo: pi-app/)
+    assert.match(builder, /publish:\n\s+provider: github\n\s+owner: rabbix404\n\s+repo: pi-app/)
   })
 
   it('has no macOS job without an Apple certificate to sign it', () => {

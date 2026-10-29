@@ -93,6 +93,6 @@ linux:
 
 publish:
   provider: github
-  owner: rabbix07
+  owner: rabbix404
   repo: pi-app
   releaseType: release

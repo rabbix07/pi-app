@@ -25,7 +25,7 @@ function payloadFor(event: UpdateDownloadedEvent, releaseNotes: string): AppUpda
   return {
     currentVersion: autoUpdater.currentVersion.version,
     latestVersion: event.version,
-    releaseUrl: `https://github.com/rabbix07/pi-app/releases/tag/v${event.version}`,
+    releaseUrl: `https://github.com/rabbix404/pi-app/releases/tag/v${event.version}`,
     releaseNotes,
     downloadUrl: null,
     downloadName: null,
