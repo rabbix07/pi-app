@@ -1,11 +1,12 @@
 /** 将 SDK / 上游返回的原始错误整理为时间线可读文案 */
+import i18n from '@renderer/lib/i18n'
 
 export function formatAgentErrorForTimeline(raw: string): string {
   const trimmed = (raw || '').trim()
-  if (!trimmed) return '未知错误'
+  if (!trimmed) return i18n.t('timeline:agentError.unknown')
 
   if (/^Request was aborted\.?$/i.test(trimmed)) {
-    return '请求已中止（Request was aborted）'
+    return i18n.t('timeline:agentError.aborted')
   }
 
   const jsonStart = trimmed.indexOf('{')
@@ -32,15 +33,14 @@ export function formatAgentErrorForTimeline(raw: string): string {
     }
   }
 
-  if (/Aborted after \d+ retry attempt/i.test(trimmed)) {
-    return trimmed.replace(
-      /Aborted after (\d+) retry attempt/i,
-      '重试 $1 次后仍失败',
-    )
+  const retry = trimmed.match(/Aborted after (\d+) retry attempt/i)
+  if (retry) {
+    const failed = i18n.t('timeline:agentError.retryFailed', { count: Number(retry[1]) })
+    return trimmed.replace(/Aborted after \d+ retry attempt/i, failed)
   }
 
   if (/empty_stream|upstream stream closed/i.test(trimmed)) {
-    return `上游模型流异常结束（empty_stream）\n${trimmed}`
+    return `${i18n.t('timeline:agentError.streamClosed')}\n${trimmed}`
   }
 
   return trimmed

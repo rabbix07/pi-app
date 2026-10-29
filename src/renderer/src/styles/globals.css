@@ -1110,6 +1110,41 @@
     color: var(--danger-semantic);
     background: color-mix(in srgb, var(--danger-semantic) 12%, transparent);
   }
+  .attachment-chip--thumb {
+    padding: 0;
+  }
+  /*
+   * The shared chip hover lifts by 0.5px behind a 1px brand-tinted shadow. On a photo that reads as a
+   * hard seam, so tiles stay flat: the frame below carries the edge in every theme, and hover only
+   * shifts the border tint.
+   */
+  .attachment-chip--thumb:hover {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none;
+    transform: none;
+  }
+  .attachment-thumb-frame {
+    border: 1px solid var(--border-base);
+    background: var(--bg-2);
+  }
+  .attachment-chip--thumb:hover .attachment-thumb-frame {
+    border-color: color-mix(in srgb, var(--brand) 40%, var(--border-base));
+  }
+  .attachment-chip--thumb img {
+    transition: transform var(--motion-normal) var(--motion-ease);
+  }
+  .attachment-chip--thumb:hover img {
+    transform: scale(1.04);
+  }
+  .attachment-chip-remove--thumb {
+    opacity: 0.92;
+  }
+  /* Solid fill on hover: a translucent mix would let the thumbnail show through the badge. */
+  .attachment-chip-remove--thumb:hover {
+    background: var(--bg-3) !important;
+    border-color: color-mix(in srgb, var(--danger-semantic) 45%, var(--border-base));
+  }
   .composer-drop-overlay {
     opacity: 0;
     transform: scale(0.985);
@@ -1671,6 +1706,15 @@
     color: var(--text-primary);
     opacity: 0.78;
   }
+  /* Pictures sit above the bubble as their own row: the bubble is the message card, and the
+     pictures must not inherit its background and padding. */
+  .timeline-user-images {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
   .timeline-user-bubble {
     max-width: 80%;
     padding: 0.5rem 0.875rem;
@@ -1739,6 +1783,12 @@
     background: var(--bg-base);
   }
   .split-view .main-chat-column {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  /* The tab strip carries the paper; the chat column it wraps must not paint a second one. */
+  .editor-tab-shell .main-chat-column {
     border-radius: 0 !important;
     box-shadow: none !important;
     background: transparent !important;

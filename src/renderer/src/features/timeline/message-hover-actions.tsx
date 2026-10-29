@@ -37,7 +37,7 @@ function MessageHoverActionsImpl({
           className="chrome-icon-btn flex h-6 w-6 items-center justify-center rounded-md text-foreground-secondary hover:text-primary disabled:opacity-35 disabled:pointer-events-none"
           title={
             sessionEntryId
-              ? t('timeline:forkFromHere', { defaultValue: '从此 Fork 新会话' })
+              ? t('timeline:forkFromHere')
               : t('timeline:jumpNeedEntry')
           }
         >

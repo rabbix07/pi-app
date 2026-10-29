@@ -123,6 +123,16 @@ app.whenReady().then(() => {
   registerAllHandlers()
   void import('./clipboard-temp-images').then(({ pruneStaleClipboardImages }) => {
     try {
+      // Migrate first: pictures sent by an older build move into the shared store, so every install
+      // reading the same sessions can render them. Then sweep the profile-local leftovers.
+      void import('./attachment-store').then(({ migrateLegacyBlobs, sweepAttachments }) => {
+        try {
+          migrateLegacyBlobs()
+          sweepAttachments()
+        } catch (e) {
+          console.warn('[attachments] migrate/sweep failed:', e)
+        }
+      })
       pruneStaleClipboardImages()
     } catch (e) {
       console.warn('[clipboard-images] prune failed:', e)
@@ -146,6 +156,11 @@ app.whenReady().then(() => {
         import('./updater').then(({ initUpdater }) => initUpdater(win)).catch((e) => {
           console.warn('[Updater] Failed to initialize:', e)
         })
+        if (!is.dev) {
+          import('./auto-update').then(({ initAutoUpdate }) => initAutoUpdate(win)).catch((e) => {
+            console.warn('[AutoUpdate] Failed to initialize:', e)
+          })
+        }
       }, 3000)
     })
   }

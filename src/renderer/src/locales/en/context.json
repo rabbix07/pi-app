@@ -25,5 +25,7 @@
   "toolResultLabel": "Tool result",
   "compactionLabel": "Compaction",
   "branchLabel": "Branch summary",
-  "systemLabel": "System"
+  "systemLabel": "System",
+  "emptySegments": "No message segments yet",
+  "emptySegment": "(empty)"
 }

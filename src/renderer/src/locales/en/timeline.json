@@ -238,8 +238,19 @@
     "label": "Your messages",
     "hint": "Jump to your earlier messages: click or drag; ↑↓ or Alt+↑↓ to step"
   },
+  "toolWrite": "Write",
+  "toolNoDiff": "No diff to show",
+  "toolDone": "Done",
+  "toolExitCode": "exit ≠ 0",
   "mcp": {
     "noOutput": "No output",
     "fullOutput": "Full output:"
-  }
+  },
+  "agentError": {
+    "unknown": "Unknown error",
+    "aborted": "Request was aborted",
+    "retryFailed": "Still failing after {{count}} retries",
+    "streamClosed": "Upstream model stream ended abnormally (empty_stream)"
+  },
+  "forkFromHere": "Fork into a new session from here"
 }

@@ -52,8 +52,17 @@ export function buildReleaseNotesFromChangelog(changelogMarkdown, version) {
     throw new Error(`CHANGELOG section for ${normalized} is empty after cleanup`)
   }
 
+  // The app name lives in electron-builder.yml, so a rename does not leave the notes stale.
+  let appName = 'pi Desktop'
+  try {
+    const yml = readFileSync(join(root, 'electron-builder.yml'), 'utf8')
+    appName = /^productName:\s*(.+)$/m.exec(yml)?.[1]?.trim().replace(/^['"]|['"]$/g, '') || appName
+  } catch {
+    // Electron builder config unreadable (e.g. packaged run): keep the default name.
+  }
+
   return [
-    `## pi Desktop v${normalized}`,
+    `## ${appName} v${normalized}`,
     '',
     body,
     '',

@@ -432,6 +432,34 @@ export function wrapPlainCodeHtml(text: string): string {
   return `<pre class="shiki"><code>${escapeHtml(text)}</code></pre>`
 }
 
+export type CodeLineTokens = { content: string; color?: string; italic?: boolean; bold?: boolean }[]
+
+/**
+ * Highlight code into per-line tokens so the preview can render one row per source line.
+ * Row rendering is what keeps wrapped lines aligned with their gutter number.
+ * Returns null when the code cannot be highlighted; the caller then shows plain text.
+ */
+export async function highlightCodeToLines(code: string, lang?: string): Promise<CodeLineTokens[] | null> {
+  const trimmed = code.replace(/\n$/, '')
+  if (!trimmed) return []
+  const requested = resolveLangId(lang)
+  try {
+    const instance = await getHighlighter()
+    const useLanguage = await ensureLanguage(instance, requested)
+    if (useLanguage === 'text') return null
+    const theme = isDark() ? 'github-dark' : 'github-light'
+    const { tokens } = instance.codeToTokens(trimmed, { lang: useLanguage, theme } as Parameters<HighlighterCore['codeToTokens']>[1])
+    return tokens.map((line) => line.map((token) => ({
+      content: token.content,
+      color: token.color,
+      italic: !!(token.fontStyle && token.fontStyle & 1),
+      bold: !!(token.fontStyle && token.fontStyle & 2),
+    })))
+  } catch {
+    return null
+  }
+}
+
 /** Highlight code to HTML; falls back to escaped plain text on failure. */
 export async function highlightCodeToHtml(code: string, lang?: string): Promise<string> {
   const trimmed = code.replace(/\n$/, '')

@@ -58,6 +58,8 @@ import { reloadCurrentSessionData } from '@renderer/lib/reload-current-session-d
 import { EmptyState } from '@renderer/components/ui/empty-state'
 import { enrichPlainTextWithPaths } from './markdown-inline-paths'
 import { AttachmentChip } from '@renderer/features/composer/attachment-chip'
+import { ClipboardImageChip } from './clipboard-image-chip'
+import { splitImagePathSegments } from './image-path-segments'
 import { type AttachmentMeta, type Segment } from '@renderer/features/composer/attachments'
 
 const MarkdownView = lazy(() => import('./markdown-view'))
@@ -86,9 +88,15 @@ const TimelineItemBase = memo(function TimelineItem({
     rewindEntryId ?? (row.sessionEntryId as string | undefined)
 
   if (item.type === 'user-message') {
-    const segments: Segment[] = (item.segments as Segment[] | undefined)?.length
+    const rawSegments: Segment[] = (item.segments as Segment[] | undefined)?.length
       ? (item.segments as Segment[])
       : [{ type: 'text', text: String(item.text || '') }]
+    const segments = splitImagePathSegments(rawSegments)
+    // Pictures sit above the text, like the composer's staged strip — not inline in the sentence.
+    const pictures = segments.filter(
+      (s) => s.type === 'clipboard-image' || (s.type === 'file' && s.attachment.kind === 'image'),
+    )
+    const body = segments.filter((s) => !pictures.includes(s))
     return (
       <div className="timeline-message-row timeline-user-row">
         <MessageHoverShell
@@ -107,29 +115,37 @@ const TimelineItemBase = memo(function TimelineItem({
             ) : null
           }
         >
-          <div className="timeline-user-bubble">
-            {segments.map((s: Segment, i: number) => {
-              if (s.type === 'text') return <span key={i}>{enrichPlainTextWithPaths(s.text)}</span>
-              if (s.type === 'clipboard-image') {
-                return (
-                  <AttachmentChip
+          {pictures.length > 0 && (
+            // Pictures get their own row above the bubble: the bubble is the message card, and a
+            // picture inside it would inherit its background and padding.
+            <div className="timeline-user-images">
+              {pictures.map((s, i) =>
+                s.type === 'clipboard-image' ? (
+                  <ClipboardImageChip key={i} path={s.path} name={s.name} />
+                ) : (
+                  <ClipboardImageChip
                     key={i}
-                    attachment={{ path: s.path, name: s.name, kind: 'image' }}
-                    openable
-                    className="mx-0.5"
+                    path={(s as { attachment: AttachmentMeta }).attachment.path}
+                    name={(s as { attachment: AttachmentMeta }).attachment.name}
                   />
-                )
-              }
+                ),
+              )}
+            </div>
+          )}
+          {(body.length > 0) && <div className="timeline-user-bubble">
+            {body.map((s: Segment, i: number) => {
+              if (s.type === 'text') return <span key={i}>{enrichPlainTextWithPaths(s.text)}</span>
+              const attachment = (s as { attachment: AttachmentMeta }).attachment
               return (
                 <AttachmentChip
                   key={i}
-                  attachment={s.attachment as AttachmentMeta}
+                  attachment={attachment}
                   openable
                   className="mx-0.5"
                 />
               )
             })}
-          </div>
+          </div>}
         </MessageHoverShell>
       </div>
     )
@@ -178,9 +194,7 @@ const TimelineItemBase = memo(function TimelineItem({
               }
             >
               <div className="timeline-status-line timeline-status-line--warn text-[12px]">
-                {t('timeline:interruptedEmpty', {
-                  defaultValue: '回复未完成（程序关闭或中断）。可点回退到上一条后继续。',
-                })}
+                {t('timeline:interruptedEmpty')}
               </div>
             </MessageHoverShell>
           </div>
@@ -229,7 +243,7 @@ const TimelineItemBase = memo(function TimelineItem({
           </div>
         ) : isInterrupted && !hasText ? (
           <div className="text-[12px] timeline-text-quiet">
-            {t('timeline:interruptedPartial', { defaultValue: '回复未完成（已中断）' })}
+            {t('timeline:interruptedPartial')}
           </div>
         ) : null}
       </>
@@ -269,7 +283,7 @@ const TimelineItemBase = memo(function TimelineItem({
           : 'timeline-text-quiet'
     const Icon = status === 'error' ? XCircle : status === 'ok' ? CheckCircle2 : CornerDownLeft
     const label =
-      status === 'error' ? t('timeline:statusFailed') : status === 'ok' ? t('timeline:statusDone') : String(item.text ?? '').includes('失败') ? t('timeline:statusFailed') : t('timeline:statusExecuted')
+      status === 'error' ? t('timeline:statusFailed') : status === 'ok' ? t('timeline:statusDone') : String(item.text ?? '').includes('失败') ? t('timeline:statusFailed') : t('timeline:statusExecuted')  // i18n-exempt: matches text, not UI copy
     return (
       <div className="py-1">
         <div className="timeline-status-line">

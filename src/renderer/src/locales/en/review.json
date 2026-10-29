@@ -49,5 +49,11 @@
     "turn": "Turn",
     "session": "Session",
     "git": "Git"
+  },
+  "hunkComment": {
+    "draftTitle": "Inline comment draft",
+    "delete": "Delete",
+    "placeholder": "Comment draft…",
+    "save": "Save"
   }
 }

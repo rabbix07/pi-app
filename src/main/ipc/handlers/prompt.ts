@@ -2,10 +2,14 @@ import { workerManager } from '../../worker-manager'
 import { ensureWorkerSessionBound } from '../../session-bind-state'
 import { normalizeSessionKey } from '../../worker-session-key'
 import { registerHandler, registerHandlerWithSchema } from '../registry'
-import { writeClipboardTempImage } from '../../clipboard-temp-images'
+import { readRemoteAttachment, writeClipboardTempImage } from '../../clipboard-temp-images'
 import { capabilityCatalog, capabilitySectionMap, capabilityToolFamilies } from '../../capabilities/catalog'
-import { clipboardWriteTempImageSchema, promptTextSchema } from '../schemas'
+import { clipboardReadTempImageSchema, clipboardWriteTempImageSchema, promptTextSchema } from '../schemas'
+import { persistAttachments } from '../../attachment-store'
 import { noteBrowserTarget } from '../../browser/targets'
+
+/** Matches the composer's paste limit, so a re-read can never return more than was written. */
+const CLIPBOARD_READ_IMAGE_MAX_BYTES = 8 * 1024 * 1024
 
 export function registerPromptHandlers(): void {
   const bindBeforePrompt = async (sessionFile?: string) => {
@@ -46,6 +50,9 @@ export function registerPromptHandlers(): void {
     const bind = await bindBeforePrompt(req.sessionFile)
     await applyCapabilities(req)
     await workerManager.sendPrompt(req.text, req.sessionFile)
+    // Copies every attachment to a durable blob and records where it came from, so the bubble keeps
+    // its picture after the 7-day temp prune. The prompt text is unchanged — still a path.
+    persistAttachments(req.attachments, req.sessionFile)
     // Keep clipboard images on disk for the agent turn (tools like `read` use the path).
     // Cleanup is TTL/startup prune + optional quit, not immediate delete-on-send.
     return {
@@ -71,10 +78,20 @@ export function registerPromptHandlers(): void {
     return { path: filePath }
   })
 
+  /** Thumbnail for images already sent, so the timeline can show the picture instead of its file name. */
+  registerHandlerWithSchema('ipc:clipboard.readTempImage', clipboardReadTempImageSchema, async (req) => {
+    const file = readRemoteAttachment(req.path)
+    if (!file) return { ok: false as const, error: 'not_found' }
+    if (!file.mime.startsWith('image/')) return { ok: false as const, error: 'not_image' }
+    if (file.bytes.length > CLIPBOARD_READ_IMAGE_MAX_BYTES) return { ok: false as const, error: 'too_large' }
+    return { ok: true as const, dataUrl: `data:${file.mime};base64,${file.bytes.toString('base64')}` }
+  })
+
   registerHandlerWithSchema('ipc:prompt.steer', promptTextSchema, async (req) => {
     const bind = await bindBeforePrompt(req.sessionFile)
     await applyCapabilities(req)
     await workerManager.steer(req.text, req.sessionFile)
+    persistAttachments(req.attachments, req.sessionFile)
     return {
       steered: true,
       model: bind?.model,
@@ -87,6 +104,7 @@ export function registerPromptHandlers(): void {
     const bind = await bindBeforePrompt(req.sessionFile)
     await applyCapabilities(req)
     await workerManager.followUp(req.text, req.sessionFile)
+    persistAttachments(req.attachments, req.sessionFile)
     return {
       messageId: `msg-${Date.now()}`,
       model: bind?.model,
